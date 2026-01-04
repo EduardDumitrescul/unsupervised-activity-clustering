@@ -14,7 +14,7 @@ class ModelRunner:
         self.y_pred = None
         self.y_true = None
 
-    def run(self, eval_set='val'):
+    def run(self, eval_set='test'):
         self.model.fit(
             self.feature_set.x['train'],
             self.feature_set.y['train'].ravel()
@@ -59,8 +59,8 @@ class ModelRunner:
         # 1. Calculate Permutation Importance
         result = permutation_importance(
             self.model,
-            self.feature_set.x['val'],
-            self.feature_set.y['val'].ravel(),
+            self.feature_set.x['test'],
+            self.feature_set.y['test'].ravel(),
             n_repeats=n_repeats,
             random_state=42,
             n_jobs=-1

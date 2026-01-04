@@ -9,7 +9,7 @@ class UciHarDataset:
         self._load_activity_labels()
         self._load_feature_names()
         self._load_features()
-        self._split_train_in_train_and_val()
+        # self._split_train_in_train_and_val()
 
     def _load_activity_labels(self):
         self.activity_labels = {}

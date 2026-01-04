@@ -54,7 +54,7 @@ class ManuallySelectedFeatureSet:
     def _build_feature_set(self):
         indices = list(ManuallySelectedFeatureSet.MANUAL_FEATURE_SET.keys())
 
-        for set_name in ['train', 'val', 'test']:
+        for set_name in ['train', 'test']:
             x = self.dataset.x[set_name][:, indices]
             y = self.dataset.y[set_name]
 
@@ -66,7 +66,7 @@ class ManuallySelectedFeatureSet:
     def _scale_feature_set(self):
         scaler = StandardScaler()
         self.x['train'] = scaler.fit_transform(self.x['train'])
-        self.x['val'] = scaler.transform(self.x['val'])
+        # self.x['val'] = scaler.transform(self.x['val'])
         self.x['test'] = scaler.transform(self.x['test'])
 
         print(f"Scaled features using StandardScaler.")
