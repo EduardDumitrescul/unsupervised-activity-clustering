@@ -26,9 +26,12 @@ class ManuallySelectedFeatureSet:
 
         # Walking vs Stairs
         # Rhythm
-        80: 'tBodyAccJerk-mean()-X',
-        81: 'tBodyAccJerk-mean()-Y',
-        82: 'tBodyAccJerk-mean()-Z',
+        # 80: 'tBodyAccJerk-mean()-X',
+        # 81: 'tBodyAccJerk-mean()-Y',
+        # 82: 'tBodyAccJerk-mean()-Z',
+        164: 'tBodyGyroJerk-std()-X',
+        165: 'tBodyGyroJerk-std()-Y',
+        166: 'tBodyGyroJerk-std()- Z',
         120: 'tBodyGyro-mean()-X',
         265: 'fBodyAcc-mean()-X',
         # 502: 'fBodyAccMag-mean()',
@@ -54,8 +57,6 @@ class ManuallySelectedFeatureSet:
         for set_name in ['train', 'val', 'test']:
             x = self.dataset.x[set_name][:, indices]
             y = self.dataset.y[set_name]
-
-
 
             self.x[set_name] = x
             self.y[set_name] = y
