@@ -31,7 +31,7 @@ class ManuallySelectedFeatureSet:
         # 82: 'tBodyAccJerk-mean()-Z',
         164: 'tBodyGyroJerk-std()-X',
         165: 'tBodyGyroJerk-std()-Y',
-        166: 'tBodyGyroJerk-std()- Z',
+        166: 'tBodyGyroJerk-std()-Z',
         120: 'tBodyGyro-mean()-X',
         265: 'fBodyAcc-mean()-X',
         # 502: 'fBodyAccMag-mean()',

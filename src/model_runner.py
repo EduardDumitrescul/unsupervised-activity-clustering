@@ -5,7 +5,7 @@ from sklearn.inspection import permutation_importance
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
 
 
-class ModelRunner:
+class SvmRunner:
     def __init__(self, dataset, feature_set, model, name="Model"):
         self.dataset = dataset
         self.feature_set = feature_set
@@ -14,7 +14,7 @@ class ModelRunner:
         self.y_pred = None
         self.y_true = None
 
-    def run(self, eval_set='test'):
+    def run(self, eval_set='test', verbose=True):
         self.model.fit(
             self.feature_set.x['train'],
             self.feature_set.y['train'].ravel()
@@ -25,16 +25,17 @@ class ModelRunner:
 
         accuracy = accuracy_score(self.y_true, self.y_pred)
         print(f"Accuracy on {self.name}: {accuracy:.4f}")
-        print("\nClassification Report:")
-        print(classification_report(
-            self.y_true,
-            self.y_pred,
-            target_names=list(self.dataset.activity_labels.values())
-        ))
+        if verbose:
+            print("\nClassification Report:")
+            print(classification_report(
+                self.y_true,
+                self.y_pred,
+                target_names=list(self.dataset.activity_labels.values())
+            ))
 
         return accuracy
 
-    def plot_confusion_matrix(self):
+    def plot_confusion_matrix(self, filename=None):
         if self.y_pred is None:
             print("Error: Run the model before plotting.")
             return
@@ -51,9 +52,11 @@ class ModelRunner:
         plt.xlabel('Predicted Activity')
         plt.xticks(rotation=45, ha='right')
         plt.tight_layout()
+        if filename:
+            plt.savefig(filename)
         plt.show()
 
-    def plot_feature_importance(self, n_repeats=10):
+    def plot_feature_importance(self, n_repeats=10, filename=None):
         print(f"Calculating feature importance for {self.name}...")
 
         # 1. Calculate Permutation Importance
@@ -87,6 +90,8 @@ class ModelRunner:
         plt.xlabel("Decrease in Accuracy (when shuffled)")
         plt.ylabel("Manual Feature")
         plt.tight_layout()
+        if filename:
+            plt.savefig(filename)
         plt.show()
 
         return importance_df

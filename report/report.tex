@@ -1,0 +1,470 @@
+\documentclass[12pt,a4paper]{article}
+
+% Packages for better formatting
+\usepackage[utf8]{inputenc}
+\usepackage[title]{appendix}
+\usepackage{geometry}
+\geometry{margin=1in}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{amsmath}
+\usepackage{parskip} % Removes indents and adds space between paragraphs
+\usepackage[colorlinks=false, allcolors=blue]{hyperref} % Makes the DOI a clickable link
+\usepackage{svg}
+\usepackage{placeins}
+\usepackage{multirow}
+
+\usepackage[
+    % backend=biber,
+    style=numeric,
+    maxbibnames=99,    % Show all authors
+    sorting=none       % Order by appearance
+]{biblatex}
+\addbibresource{references.bib}
+
+\title{Unsupervised Human Activity Recognition on the UCI-HAR Dataset}
+\author{Eduard-Valentin Dumitrescul}
+\date{\today}
+
+
+\begin{document}
+
+\maketitle
+\tableofcontents
+
+
+\clearpage
+\section{Introduction}
+\label{sec:introduction}
+
+\textbf{Human Activity Recognition (HAR)} plays a significant role in modern health monitoring, fitness tracking, and elderly care systems. This technology utilizes inertial sensors---specifically accelerometers and gyroscopes---embedded in mobile devices to gather high-frequency data about a user's movement. By training machine learning models on this data, it is possible to classify physical movement into distinct categories.
+
+Traditional learning models used for HAR, such as \textbf{Support Vector Machines (SVM)}, are supervised. These models require large, manually labeled datasets to function effectively. However, labeling data is a labor-intensive process that is not always feasible for real-world applications. 
+
+This project explores \textbf{unsupervised learning}, specifically \textbf{Self-Organizing Maps (SOM)} and \textbf{Mean-Shift Clustering}. The primary goal is to determine if these algorithms can discover the underlying structure of human movement without prior knowledge of activity labels. A supervised SVM is implemented alongside these models to serve as a performance benchmark.
+
+
+\subsection{UCI-HAR Dataset Overview}
+\label{sec:dataset}
+The \textbf{UCI-HAR} dataset \cite{human_activity_recognition_using_smartphones_240} 
+is a standard benchmark for Human Activity Recognition tasks.
+The data was collected from 30 subjects  performing 6 activities (walking, walking upstairs, walking downstairs, sitting, standing, laying) 
+
+During the experiments, the subjects wore a Samsung Galaxy S II smartphone tied to their waist. Using the device's embedded accelerometer and gyroscope, movement and orientation data was collected at a rate of 50Hz
+The captured information was later manually labeled using video recording of the subjects.
+
+The resulting database consists of 7352 train examples and 2947 test examples were created. Each example consists of  a 561-feature vector derived from the collected data.
+
+\section{Methodology}
+\label{sec:methodology}
+The UCI-HAR dataset presents an opportunity to employ two distinct learning paradigms: supervised and unsupervised. 
+The primary objective is to compare these two types of algorithms in order to discover if the models that do not 
+have access to class labels are able to discoer the underlying structure of the data.
+
+\subsection {Models}
+A total of 3 models (1 supervised, 2 unsupeerised) have been trained and evaluated on the UCI-HAR dataset.
+\label{sec:models}
+\subsubsection{Support Vector Machine}
+
+For the benchmark model, a \textbf{Support Vector Machine} is used. It is a classic machine learning algorithm known for its efficiency and high-performance on tabular data. In the context of UCI-HAR, the SVM is effective in finding
+hyperplanes delimiting the activity classes.
+
+\subsubsection{Self-Organizing Maps (SOM)}
+The first unsuperised model is a \textbf{Self-Organizing Map (SOM)}. This is a type of artificial neural network that performs dimensionality-reduction by mapping high-dimensional data onto a low-dimensional space (often 2D), while preserving the topological properties of the input data.
+Because similar items are clustered together on the grid, the overall structure can be easily visualized.
+
+\subsubsection{Mean-Shift Clustering}
+The second unsupervised model is a \textbf{Mean-Shift Clustering} algorithm, which clusters data by iteratively shifting items towards high-density areas.Unlike other algorithms, Mean-Shift Clusterin determines the number of clusters based on the data itself, allowing us to see if the data naturally groups together.
+
+\subsection{Model Input Strategies}
+While selecting the feature sets, it is important to consider that clustering algorithms, specifically Self-Organizing Maps (SOM) and Mean-Shift Clustering, suffer from the \textbf{curse of dimensionality}. A high number of dimensions causes the data point to be sparse, which makes distance-based metrics (like Euclidean distance) unreliable. To mitigate this, the models will be trained on multiple feature sets: 
+
+\begin{itemize}
+    \item The original 561-feature vector. This serves as a baseline for the models
+    \item Manually selected features. A reduced set of features based on physical reasoning.
+    \item Principal Component Analysis (PCA): A reduced set of uncorrelated components, which preserves most of the information.
+\end{itemize}
+
+\subsection{Supervised Model Evaluation}
+% Metrics: Accuracy, Precision, Recall, F1-Score, and Confusion Matrix.
+
+\subsection{Unsupervised Model Evaluation}
+
+\subsubsection{Internal Validation (Clustering Specific Metrics)}
+\label{subsec:internal_metrics}
+% Discuss the Silhouette Score (separation/cohesion) and Distance Metrics (centroid proximity).
+% For SOM, include Quantization Error and Topographic Error.
+
+\subsubsection{External Validation (Projected Label Evaluation)}
+\label{subsec:external_metrics}
+% Explain the Majority Vote Mapping Logic: How unsupervised clusters are assigned 
+% activity names based on the most frequent ground-truth label within them.
+
+\pagebreak
+\section{Feature Extraction and Engineering}
+\label{sec:features}
+
+\subsection{Feature Set 1: Original 561-feature vectors}
+The baseline feature set consists of the full 561-dimensional vectors provided by the UCI-HAR dataset. They were calculated from the 
+3-axial linear acceleration and angular velocity signals. The creators applied various filters and transformations, including Fast Fourier Transform to produce frequency domain variabled\cite{human_activity_recognition_using_smartphones_240}. This set represents the most comprehensive data available, but poses the risk of the curse of dimensionality.
+
+\FloatBarrier
+\subsection{Feature Set 2: Manually Selected Domain Features}
+A hand-picked set of 15 features was selected based on the physical state differences between the 6 activities.
+\begin{itemize} 
+    \item \textbf{Static Orientation (Laying vs. Others):} To distinguish the "Laying" state (horizontal) from vertical states (Sitting, Standing, Walking), we selected the mean gravity acceleration components across all three axes: \texttt{tGravityAcc-mean()-X}, \texttt{Y}, and \texttt{Z}.
+
+    \item \textbf{Dynamic vs. Static States (Moving vs. Non-Moving):} To separate active movements (Walking, Stairs) from rest (Sitting, Standing, Laying), we included the Signal Magnitude Area (\texttt{tBodyAcc-sma()}) and the standard deviation of body acceleration magnitude (\texttt{tBodyAccMag-std()}).
+
+    \item \textbf{Rhythmic Motion and Gait (Walking vs. Stairs):} Distinguishing walking from stair navigation requires capturing the cadence and intensity of movement. We have chosen the following features in an attempt to capture that information.
+        \begin{itemize}
+            \item Gyroscope Jerk standard deviation: \texttt{tBodyGyroJerk-std()-X}, \texttt{Y}, and \texttt{Z}.
+            \item Mean angular velocity: \texttt{tBodyGyro-mean()-X}.
+            \item Frequency-domain body acceleration: \texttt{fBodyAcc-mean()-X}.
+            \item Frequency-domain magnitude mean frequency: \texttt{fBodyAccMag-meanFreq()}.
+        \end{itemize}
+
+
+
+    \item \textbf{Postural Stability (Standing vs. Sitting):} These two states are predicted to be difficult to separate. To capture the subtle movements present while standing compared to the more rigid seated posture, we included:
+        \begin{itemize}
+            \item Gyroscope standard deviation: \texttt{tBodyGyro-std()-X}, \texttt{Y}, and \texttt{Z}.
+            \item Angular velocity jerk magnitude: \texttt{tBodyGyroJerkMag-std()}.
+        \end{itemize}
+\end{itemize}
+
+\FloatBarrier
+\subsection{Feature Set 3: Principal Component Analysis (PCA)}
+
+Principal Component Analysis is used to transform the original 561-dimensional vectors into lower-dimensional ones, while preserving the majority of the information. This algorithm calculates new uncorrelated features that will be fed to the models.
+
+\begin{figure}
+    \centering
+    \includesvg[width=0.8\textwidth]{../fig/pca_explained_variance.svg}
+    \caption{PCA Explained Variance Ratio}
+\end{figure}
+
+Various numbers of components have been extracted using PCA:
+
+\begin{itemize}
+    \item \textbf{10 components} preserve 80\% of the original dataset's variance.
+    \item \textbf{34 compoentns} preserve 90\% of the original dataset's variance.
+    \item \textbf{67 components} preserve 95\% of the original dataset's variance.
+\end{itemize}
+
+\pagebreak
+\subsection{Training on Full Feature Set}
+
+Grid search was used to find the best parameter configuration for the SVM. Results can be seen in the table below. The model achieves \textbf{96.54\%} accuracy on the test subset.
+
+
+
+\begin{table}[htbp]
+    \centering
+    \begin{tabular}{l | c c c c}
+    \hline
+    & \multicolumn{4}{c}{\textbf{Regularization Parameter ($C$)}} \\
+    \textbf{Gamma ($\gamma$)} & \textbf{0.1} & \textbf{1} & \textbf{10} & \textbf{100} \\
+    \hline
+    \texttt{'scale'} & 91.28\% & 95.05\% & 96.20\% & \textbf{96.54\%} \\
+    \texttt{0.01}    & 92.30\% & 94.98\% & 96.20\% & \textbf{96.54\%} \\
+    \texttt{0.001}   & 80.96\% & 92.77\% & 95.39\% & 96.17\% \\
+    \hline
+    \end{tabular}
+    \caption{Grid Search Results for SVM on Full Feature Set (561 features). Results represent Test Accuracy using an RBF kernel.}
+    \label{tab:grid_search_full}
+\end{table}
+
+\begin{table}[htbp]
+    \centering
+    \begin{tabular}{@{}lcccc@{}}
+    \toprule
+    \textbf{Activity} & \textbf{Precision} & \textbf{Recall} & \textbf{F1-Score} & \textbf{Support} \\ \midrule
+    Walking            & 0.96               & 0.99            & 0.97              & 496              \\
+    Walking Upstairs   & 0.95               & 0.96            & 0.96              & 471              \\
+    Walking Downstairs & 0.99               & 0.95            & 0.97              & 420              \\
+    Sitting            & 0.98               & 0.90            & 0.94              & 491              \\
+    Standing           & 0.92               & 0.98            & 0.95              & 532              \\
+    Laying             & 1.00               & 1.00            & 1.00              & 537              \\ \midrule
+    \textbf{Accuracy}  &                    &                 & \textbf{0.97}     & \textbf{2947}    \\
+    Macro Avg          & 0.97               & 0.96            & 0.96              & 2947             \\
+    Weighted Avg       & 0.97               & 0.97            & 0.97              & 2947             \\ \bottomrule
+    \end{tabular}
+    \caption{Detailed Classification Report for the Optimized SVM (Full Feature Set)}
+    \label{tab:svm_classification_report}
+\end{table}
+
+\subsection{Training on Manually Selected Feature Set}
+
+To evaluate the efficiency of the domain-specific features, the SVM was retrained on the 15-dimensional subset. As shown in the results below, the model remains highly effective despite a significant reduction in input dimensionality.
+
+\begin{table}[htbp]
+    \centering
+    \begin{tabular}{l | c c c c}
+    \hline
+    & \multicolumn{4}{c}{\textbf{Regularization Parameter ($C$)}} \\
+    \textbf{Gamma ($\gamma$)} & \textbf{0.1} & \textbf{1} & \textbf{10} & \textbf{100} \\
+    \hline
+    \texttt{'scale'} & 89.48\% & \textbf{90.16\%} & 88.97\% & 89.01\% \\
+    \texttt{0.01}    & 85.31\% & 89.89\%          & 89.92\% & 89.38\% \\
+    \texttt{0.001}   & 51.95\% & 84.97\%          & 89.55\% & 89.82\% \\
+    \hline
+    \end{tabular}
+    \caption{Grid Search Results for SVM on Manual Feature Set (15 domain-specific features). Results represent Test Accuracy using an RBF kernel.}
+    \label{tab:grid_search_manual}
+\end{table}
+
+
+\begin{table}[htbp]
+    \centering
+    \begin{tabular}{@{}lcccc@{}}
+    \toprule
+    \textbf{Activity} & \textbf{Precision} & \textbf{Recall} & \textbf{F1-Score} & \textbf{Support} \\ \midrule
+    Walking            & 0.91               & 0.96            & 0.93              & 496              \\
+    Walking Upstairs   & 0.87               & 0.89            & 0.88              & 471              \\
+    Walking Downstairs & 0.94               & 0.85            & 0.89              & 420              \\
+    Sitting            & 0.89               & 0.77            & 0.83              & 491              \\
+    Standing           & 0.82               & 0.91            & 0.86              & 532              \\
+    Laying             & 1.00               & 1.00            & 1.00              & 537              \\ \midrule
+    \textbf{Accuracy}  &                    &                 & \textbf{0.90}     & \textbf{2947}    \\ \bottomrule
+    \end{tabular}
+    \caption{Classification Report: Manual Feature Set.}
+    \label{tab:svm_manual_report}
+\end{table}
+
+\FloatBarrier
+\subsection{Training on PCA Feature Set (80\% Variance)}
+
+To evaluate the impact of automated dimensionality reduction, the SVM was trained on the first 10 principal components, which capture 80\% of the dataset's variance. This configuration tests the model's robustness when restricted to the most significant statistical features.
+
+The grid search results in Table \ref{tab:grid_search_pca80} indicate that the model achieves a peak accuracy of \textbf{88.26\%} at $C=100$ and $\gamma=scale$. While lower than the manual feature set (90.16\%), it represents a high degree of information density for only 10 dimensions.
+
+\begin{table}[htbp]
+    \centering
+    \begin{tabular}{l | c c c c}
+    \hline
+    & \multicolumn{4}{c}{\textbf{Regularization Parameter ($C$)}} \\
+    \textbf{Gamma ($\gamma$)} & \textbf{0.1} & \textbf{1} & \textbf{10} & \textbf{100} \\
+    \hline
+    \texttt{'scale'} & 86.60\% & 87.72\% & 88.12\% & \textbf{88.26\%} \\
+    \texttt{0.01}    & 85.71\% & 87.72\% & 87.75\% & 88.12\% \\
+    \texttt{0.001}   & 78.08\% & 86.02\% & 87.72\% & 88.02\% \\
+    \hline
+    \end{tabular}
+    \caption{Grid Search Results: PCA Feature Set (10 components, 80\% Variance).}
+    \label{tab:grid_search_pca80}
+\end{table}
+
+\begin{table}[htbp]
+    \centering
+    \begin{tabular}{@{}lcccc@{}}
+    \toprule
+    \textbf{Activity} & \textbf{Precision} & \textbf{Recall} & \textbf{F1-Score} & \textbf{Support} \\ \midrule
+    Walking            & 0.87               & 0.98            & 0.92              & 496              \\
+    Walking Upstairs   & 0.90               & 0.90            & 0.90              & 471              \\
+    Walking Downstairs & 0.93               & 0.80            & 0.86              & 420              \\
+    Sitting            & 0.81               & 0.72            & 0.76              & 491              \\
+    Standing           & 0.77               & 0.87            & 0.82              & 532              \\
+    Laying             & 1.00               & 0.98            & 0.99              & 537              \\ \midrule
+    \textbf{Accuracy}  &                    &                 & \textbf{0.88}     & \textbf{2947}    \\ \bottomrule
+    \end{tabular}
+    \caption{Classification Report: PCA Feature Set (80\% Variance).}
+    \label{tab:svm_report_pca80}
+\end{table}
+
+\subsection{Interpretation}
+The SVM achieves great accuracy on the full feature dataset and good accuracy on the manually selected features and PCA feature set. The main difficulty encounted by the model is the distunguishing between \textit{Sitting} and \textit{Standing}, as expected (\ref{fig:svm_full_cm}, \ref{fig:svm_manual_cm} \ref{fig:svm_pca80_cm}). \textit{Laying} is the easiest to classify, achieving almost perfect metrics for all three features sets. Static and dynamic classes are easily distinguished between one another.
+
+\section{Unsupervised Model 1: Self-Organizing Maps}
+\label{sec:som}
+Self-Organizing Maps (SOM) were employed to projects the high-dimensional data (561, 15, repectively 10 dimensions) to a 
+2-dimensional grid.
+
+Model Parameters:
+\begin{itemize}
+    \item \textbf{Grid size}: Determines the resolution of the final map and the number of clusters that represent the input space.
+    \item  \textbf{Learning rate}: Controls how aggresive the weihts are updated between iterations.  
+    \item  \textbf{Sigma}: Defines the neighborhood radius. A larger value prioritizes global ordering, while a lower one focuses on local fine-tuning
+\end{itemize}
+The SOM algorithm works by initializing a weight vector for each neuron in the grid. Each iteration consists of three steps:
+\begin{enumerate}
+    \item \textbf{Competition}: For each input sample, the neuron with the smallest Euclidean distance is calculated (\textit{Best Matching Unit}).
+    \item \textbf{Cooperation}: The BMU identifies the neurons in its neighborhood.
+    \item \textbf{Adaptation}: The weight vectors of the BMU and its neighbors are updated.
+\end{enumerate}
+
+The two most important metrics of the SOM are:
+\begin{itemize}
+    \item \textbf{Quantization Error (QE)}: The average Euclidean distance between each input sample and its BMU.
+    \item \textbf{Topographic Error (TE)}: The proportion of input samples for each the 1st BMU and the 2nd BMU are not neighbors
+\end{itemize}
+
+\subsection{Training}
+
+Grid Search was emplyed on each feature set with the following parameters:
+\begin{itemize}
+    \item \textbf{Grid Size(4x4, 6x6, 8x8, 10x10, 20x20)}
+    \item \textbf{Sigma Ratio(0.2, 0.4, 0.6)}: This is relative to the grid size (e.g. sigma ratio 0.2 for grid size 10x10 is sigma 2)
+    \item \textbf{Learning Rate(0.5)}: For fast learning
+    \item \textbf{Number of Iterations(5000)}
+\end{itemize}
+
+\textbf{Quantization Error (QE)} and \textbf{Topographic Error (TE)} are calculated for each configuration. For ensuring the input data is correctly mapped to the grid, only the results having a TE lower than 0.1 are considered.
+Then, the QE is the deciding factor, while also prioritizing small grid sizes.
+
+\begin{table}[h]
+\centering
+    \begin{tabular}{@{}lccc@{}}
+        \toprule
+        \textbf{Grid Size} & \textbf{Sigma 0.2} & \textbf{Sigma 0.4} & \textbf{Sigma 0.6} \\ \midrule
+            4 $\times$ 4   & 4.277 / 0.511 & 4.375 / 0.196 & 4.557 / 0.084 \\
+            6 $\times$ 6   & 3.879 / 0.384 & 4.276 / 0.119 & 4.461 / 0.048 \\
+            8 $\times$ 8   & 3.789 / 0.266 & 4.206 / 0.093 & 4.383 / 0.067 \\
+            10 $\times$ 10 & 3.690 / 0.245 & 4.158 / 0.090 & 4.400 / 0.159 \\
+            20 $\times$ 20 & 3.559 / 0.143 & 4.141 / 0.069 & 4.309 / 0.055 \\ \bottomrule
+        \multicolumn{4}{l}{\small \textit{Note: Cells show Quantization Error (QE) / Topographic Error (TE)}}
+    \end{tabular}
+    \caption{SOM Grid Search Results: Full (561) Feature Set}
+\end{table}
+
+\begin{table}[h]
+    \centering
+    \begin{tabular}{@{}lccc@{}}
+    \toprule
+    \textbf{Grid Size} & \textbf{Sigma 0.2} & \textbf{Sigma 0.4} & \textbf{Sigma 0.6} \\ \midrule
+    4 $\times$ 4   & 1.510 / 0.190 & 1.613 / 0.034 & 1.775 / 0.007 \\
+    6 $\times$ 6   & 1.274 / 0.279 & 1.488 / 0.030 & 1.694 / 0.035 \\
+    8 $\times$ 8   & 1.155 / 0.231 & 1.455 / 0.040 & 1.700 / 0.028 \\
+    10 $\times$ 10 & 1.067 / 0.101 & 1.422 / 0.048 & 1.614 / 0.049 \\
+    20 $\times$ 20 & 0.977 / 0.072 & 1.381 / 0.068 & 1.579 / 0.037 \\ \bottomrule
+    \multicolumn{4}{l}{\small \textit{Note: Cells show Quantization Error (QE) / Topographic Error (TE)}}
+    \end{tabular}
+    \caption{SOM Grid Search Results: Manual (15) Feature Set}
+\end{table}
+
+\begin{table}[h]
+    \centering
+    \begin{tabular}{@{}lccc@{}}
+    \toprule
+    \textbf{Grid Size} & \textbf{Sigma 0.2} & \textbf{Sigma 0.4} & \textbf{Sigma 0.6} \\ \midrule
+    4 $\times$ 4   & 2.253 / 0.167 & 2.453 / 0.078 & 2.755 / 0.150 \\
+    6 $\times$ 6   & 1.897 / 0.205 & 2.357 / 0.062 & 2.578 / 0.065 \\
+    8 $\times$ 8   & 1.794 / 0.108 & 2.261 / 0.078 & 2.488 / 0.051 \\
+    10 $\times$ 10 & 1.726 / 0.190 & 2.211 / 0.055 & 2.463 / 0.059 \\
+    20 $\times$ 20 & 1.621 / 0.088 & 2.144 / 0.036 & 2.401 / 0.037 \\ \bottomrule
+    \multicolumn{4}{l}{\small \textit{Note: Cells show Quantization Error (QE) / Topographic Error (TE)}}
+    \end{tabular}
+    \caption{SOM Grid Search Results: PCA (80\%) Feature Set}
+\end{table}
+
+\FloatBarrier
+As observed from the three tables above, a good configuration for the SOM requires a balance between topographic preservation and quantization accuracy. Specifically, configurations with a \textit{Sigma Ratio} of 0.2 often resulted in a Topographic Error exceeding the 0.1 threshold, indicating a neighborhood radius too small to maintain the global structure of the map. 
+
+By prioriziting compact grids and the selection criteria (filtering for $TE < 0.1$ and selecting the minimum $QE$):
+\begin{itemize}
+    \item \textbf{Full (561):} The \textbf{$6 \times 6$} grid with \textbf{0.6 Sigma Ratio} ($QE=4.461, TE=0.048$).
+    \item \textbf{Manual (15):} The \textbf{$4 \times 4$} grid with \textbf{0.4 Sigma Ratio} ($QE=1.488, TE=0.035$).
+    \item \textbf{PCA (80\%):} The \textbf{$6 \times 6$} grid with \textbf{0.4 Sigma Ratio} ($QE=2.357, TE=0.062$).
+\end{itemize}
+
+The table below shows the results after running the previous 3 configuration on both 4 by 4 and 6 by 6 grids. Three new metrics were added:
+\begin{itemize}
+    \item \textbf{Accuracy}: Each cell was labeled it using a majority vote algorithm based on the labels for the samples belonging to it. Then, using the testing subset, the accuracy was calculated.
+    \item \textbf{Average Purity}: Each cell has an associated purity based on what percentage of the samples beloging to it are labeled like the majority.
+    \item \textbf{Pure Neurons}: The percentage of cells having the purity greater than 90\%.
+\end{itemize}
+
+\begin{table}[h]
+    \centering
+    
+    \begin{tabular}{@{}llccccc@{}}
+    \toprule
+    \textbf{Feature Set} & \textbf{Grid} & \textbf{ACC} & \textbf{QE / TE} & \textbf{Avg. Purity} & \textbf{Pure Neurons} \\ \midrule
+    \multirow{2}{*}{PCA (80\%)} & 6 $\times$ 6 & \textbf{0.7475} & 2.448 / 0.051 & \textbf{0.8042} & 30.56\% \\
+                                & 4 $\times$ 4 & 0.6098 & 2.805 / 0.150 & 0.7714 & 31.25\% \\ \midrule
+    \multirow{2}{*}{Full (561)} & 6 $\times$ 6 & 0.6583 & 4.675 / 0.154 & 0.8038 & \textbf{47.22\%} \\
+                                & 4 $\times$ 4 & 0.6298 & 4.906 / 0.279 & 0.7762 & 43.75\% \\ \midrule
+    \multirow{2}{*}{Manual (15)}& 6 $\times$ 6 & 0.6922 & \textbf{1.661 / 0.059} & 0.7484 & 27.78\% \\
+                                & 4 $\times$ 4 & 0.6230 & 1.834 / \textbf{0.041} & 0.7187 & 25.00\% \\ \bottomrule
+    \end{tabular}
+    \label{tab:som_final_results}
+    \caption{Comparison of SOM Performance across Feature Sets and Grid Sizes}
+\end{table}
+
+From these results it can be concluded that, while being far from the results of a supervised SVM, the SOM is able to successfully cluster and distinguish activity labels, without having access to labels during training. The best accuracy and average purity is achieved when training on the PCA feature set with a 6 by 6 grid. However, the manual set obtains the smallest Quantization Error and Topographic Error, while having a larger input dimension (15 compared to 10 of the PCA feature set).
+
+\begin{figure}
+    \centering
+    \includesvg[width = 0.8\textwidth]{../fig/som_pca_labeled_grid.svg}
+    \caption{Labeled grid for the 6 by 6 PCA model}
+\end{figure}
+
+\subsection{Notes}
+It is important to acknowledge that a grid with more cells will naturally achieve better results, due to how they are labeled. For this reason, The 4 by 4 manual feature set model might perform better than the 6 by 6 PCA model. Due to the discrepancy between the unsupervised nature of the models and the supervised nature of the task, it is hard to selected an objectively best model.
+
+
+
+
+\subsection{Results Evaluation (Visualizing the 40x40 Activity Map)}
+
+\section{Unsupervised Model 2: Mean-Shift Clustering}
+\label{sec:meanshift}
+
+\subsection{Training on Manually Selected Feature Set}
+\subsubsection{Bandwidth Estimation and Density Tuning}
+\subsection{Results Evaluation (Cluster Purity and Recall)}
+
+\subsection{Training on PCA Feature Set}
+\subsubsection{Bandwidth Estimation and Density Tuning}
+\subsection{Results Evaluation (Silhouette Analysis)}
+
+\section{Comparative Analysis and Discussion}
+\label{sec:discussion}
+% Compare Manual vs. PCA across all models.
+% Discuss the "Sitting vs. Standing" confusion in unsupervised models.
+% Compare Topology-based discovery (SOM) vs. Density-based discovery (Mean-Shift).
+
+\section{Conclusion}
+\label{sec:conclusion}
+
+
+\pagebreak
+\printbibliography
+
+\newpage
+\begin{appendix}
+\section{Supplementary Figures}
+\label{appendix:supplementary_figures}
+
+\begin{figure}[htbp]
+    \centering
+    \includesvg[width=0.8\textwidth]{../fig/svm_full_cm.svg}
+    \caption{Full Confusion Matrix: 561-Feature SVM.}
+    \label{fig:svm_full_cm}
+\end{figure}
+
+
+
+\begin{figure}[htbp]
+    \centering
+    \includesvg[width=0.8\textwidth]{../fig/svm_manual_cm.svg}
+    \caption{Full Confusion Matrix: 15-Feature Manual SVM.}
+    \label{fig:svm_manual_cm}
+\end{figure}
+
+\begin{figure}[htbp]
+    \centering
+    \includesvg[width=0.8\textwidth]{../fig/svm_manual_feature_importance.svg}
+    \caption{Permutation Importance for Manual Feature Set.}
+    \label{fig:svm_manual_importance}
+\end{figure}
+
+\begin{figure}[htbp]
+    \centering
+    \includesvg[width=0.8\textwidth]{../fig/svm_pca80_cm.svg}
+    \caption{Full Confusion Matrix: 10-Feature PCA SVM.}
+    \label{fig:svm_pca80_cm}
+\end{figure}
+
+\end{appendix}
+\end{document}

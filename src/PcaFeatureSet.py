@@ -28,7 +28,7 @@ class PcaFeatureSet:
             self.x[set_name] = self.pca.transform(self.dataset.x[set_name])
             self.y[set_name] = self.dataset.y[set_name]
 
-    def plot_explained_variance(self):
+    def plot_explained_variance(self, filename=None):
         if self.pca is None: return
 
         ev = self.pca.explained_variance_ratio_
@@ -45,4 +45,6 @@ class PcaFeatureSet:
         plt.xticks(range(1, self.n_components + 1))
         plt.legend()
         plt.grid(axis='y', linestyle='--')
+        if filename is not None:
+            plt.savefig(filename)
         plt.show()
