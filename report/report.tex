@@ -59,10 +59,10 @@ The resulting database consists of 7352 train examples and 2947 test examples we
 \label{sec:methodology}
 The UCI-HAR dataset presents an opportunity to employ two distinct learning paradigms: supervised and unsupervised. 
 The primary objective is to compare these two types of algorithms in order to discover if the models that do not 
-have access to class labels are able to discoer the underlying structure of the data.
+have access to class labels are able to discover the underlying structure of the data.
 
 \subsection {Models}
-A total of 3 models (1 supervised, 2 unsupeerised) have been trained and evaluated on the UCI-HAR dataset.
+A total of 3 models (1 supervised, 2 unsupervised) have been trained and evaluated on the UCI-HAR dataset.
 \label{sec:models}
 \subsubsection{Support Vector Machine}
 
@@ -85,22 +85,46 @@ While selecting the feature sets, it is important to consider that clustering al
     \item Principal Component Analysis (PCA): A reduced set of uncorrelated components, which preserves most of the information.
 \end{itemize}
 
-\subsection{Supervised Model Evaluation}
-% Metrics: Accuracy, Precision, Recall, F1-Score, and Confusion Matrix.
 
 \subsection{Unsupervised Model Evaluation}
 
 \subsubsection{Internal Validation (Clustering Specific Metrics)}
 \label{subsec:internal_metrics}
+
+In order to measure how well the clustering algorithms have separated the data points into distinct groups, we will use
+the \textbf{Silhouette Score}.
+
+\begin{equation}
+s(i) = \frac{b(i) - a(i)}{\max\{a(i), b(i)\}}
+\end{equation}
+
+\text{Where:}
+\begin{itemize}
+    \item $s(i)$: Silhouette coefficient for a single sample $i$.
+    \item $a(i)$: Mean intra-cluster distance (average distance to all other points in the same cluster).
+    \item $b(i)$: Mean nearest-cluster distance (average distance to all points in the closest cluster of which $i$ is not a member).
+    \item $S = \frac{1}{n} \sum_{i=1}^{n} s(i)$: Global silhouette score for $n$ samples.
+\end{itemize}
+
+Specific to the \textbf{Self-Organizing Map} algorithm, we are also computing:
+\begin{itemize}
+    \item \textbf{Quantization Error (QE)}: The average Euclidean distance between each input sample and its BMU.
+    \item \textbf{Topographic Error (TE)}: The proportion of input samples for each the 1st BMU and the 2nd BMU are not 
+    neighbors
+\end{itemize}
+
 % Discuss the Silhouette Score (separation/cohesion) and Distance Metrics (centroid proximity).
 % For SOM, include Quantization Error and Topographic Error.
 
 \subsubsection{External Validation (Projected Label Evaluation)}
-\label{subsec:external_metrics}
-% Explain the Majority Vote Mapping Logic: How unsupervised clusters are assigned 
-% activity names based on the most frequent ground-truth label within them.
+After the models have been trained, the resulting clusters will be labeled using majority voting based on the real labels.
+The aim is to compute metrics similar to the SVM (e.g accuracy, f1-score) and directly compare the supervised model 
+with the unsupervised ones.
 
-\pagebreak
+
+\label{subsec:external_metrics}
+
+
 \section{Feature Extraction and Engineering}
 \label{sec:features}
 
@@ -152,7 +176,13 @@ Various numbers of components have been extracted using PCA:
     \item \textbf{67 components} preserve 95\% of the original dataset's variance.
 \end{itemize}
 
-\pagebreak
+\section{Random Baseline}
+Given how the accuracy is computed for the unsupervised models, a totally random algorithm is expected to achieve 
+16.66\% accuracy, given 6 labels. Such a model would not produce significant differences in the per-class precision, 
+recall or f1-score.
+
+\section {Unsupervised Model: Support Vector Machine}
+
 \subsection{Training on Full Feature Set}
 
 Grid search was used to find the best parameter configuration for the SVM. Results can be seen in the table below. The model achieves \textbf{96.54\%} accuracy on the test subset.
@@ -293,12 +323,6 @@ The SOM algorithm works by initializing a weight vector for each neuron in the g
     \item \textbf{Adaptation}: The weight vectors of the BMU and its neighbors are updated.
 \end{enumerate}
 
-The two most important metrics of the SOM are:
-\begin{itemize}
-    \item \textbf{Quantization Error (QE)}: The average Euclidean distance between each input sample and its BMU.
-    \item \textbf{Topographic Error (TE)}: The proportion of input samples for each the 1st BMU and the 2nd BMU are not neighbors
-\end{itemize}
-
 \subsection{Training}
 
 Grid Search was emplyed on each feature set with the following parameters:
@@ -402,31 +426,128 @@ From these results it can be concluded that, while being far from the results of
 \subsection{Notes}
 It is important to acknowledge that a grid with more cells will naturally achieve better results, due to how they are labeled. For this reason, The 4 by 4 manual feature set model might perform better than the 6 by 6 PCA model. Due to the discrepancy between the unsupervised nature of the models and the supervised nature of the task, it is hard to selected an objectively best model.
 
-
-
-
-\subsection{Results Evaluation (Visualizing the 40x40 Activity Map)}
-
 \section{Unsupervised Model 2: Mean-Shift Clustering}
 \label{sec:meanshift}
 
-\subsection{Training on Manually Selected Feature Set}
-\subsubsection{Bandwidth Estimation and Density Tuning}
-\subsection{Results Evaluation (Cluster Purity and Recall)}
+The Mean-Shift Clustering is a mode-searching algorithm that groups the data points in an unpredetermined number of 
+clusters. It works by iteratively moving the data points towards the high-density areas. The 4 steps involved are:
+\begin{enumerate}
+    \item \textbf{Initialization}: All data points are considered potential cluster centers.
+    \item \textbf{Density Computation}: Based on the \textbf{bandwidth}, a window surrounding each data point is calculated and 
+    the mean is calculated for the points inside this window.
+    \item \textbf{Movement}: The points are shiften towards the previously calculated mean.
+    \item \textbf{Repetition}: Steps 2 and 3 are repeated until the shift is smaller than a predetermined threshold.
+\end{enumerate}
 
-\subsection{Training on PCA Feature Set}
-\subsubsection{Bandwidth Estimation and Density Tuning}
-\subsection{Results Evaluation (Silhouette Analysis)}
+\subsection{Training}
+Grid Search was employed on each feature set with the following parameters:
+\begin{itemize}
+    \item \textbf{bandwidth}: 2, 2.2, 2.4, 2.6, 2.8, 3.0, 3.2, 3.4, 3.6, 3.8, 4.0
+    \item \textbf{Number of Iterations}: 1000
+\end{itemize}
 
+The \textbf{Silhouette Score} and the \textbf{Number of Clusters} are used to select the best performing confiuration.
+Ideally, a silhouette score greater than 0.5 and a number of clusters similar to the actual number of labels is the goal.
+
+\begin{table}[h]
+    \centering
+    \begin{tabular}{@{}ccc@{}}
+    \toprule
+    \textbf{Bandwidth} & \textbf{Silhouette Score} & \textbf{Cluster Count} \\ \midrule
+    2.0 & 0.0860 & 70 \\
+    2.2 & 0.1005 & 47 \\
+    2.4 & 0.1230 & 39 \\
+    2.6 & 0.1539 & 22 \\
+    2.8 & 0.1877 & 13 \\
+    3.0 & 0.2071 & 13 \\
+    3.2 & 0.2303 & 10 \\
+    3.4 & 0.2759 & 8  \\
+    3.6 & 0.2792 & 5  \\
+    3.8 & 0.2805 & 5  \\
+    4.0 & 0.2742 & 4  \\ \bottomrule
+    \end{tabular}
+    \caption{Mean Shift Grid Search Results: PCA Feature Set}
+\end{table}
+
+
+
+\begin{table}[h]
+    \centering
+    \begin{tabular}{@{}ccc@{}}
+    \toprule
+    \textbf{Bandwidth} & \textbf{Silhouette Score} & \textbf{Cluster Count} \\ \midrule
+    2.0 & 0.3068 & 17 \\
+    2.2 & 0.3467 & 9  \\
+    2.4 & 0.3708 & 8  \\
+    2.6 & 0.3737 & 7  \\
+    2.8 & 0.3612 & 5  \\
+    3.0 & 0.4308 & 4  \\
+    3.2 & 0.4308 & 4  \\
+    3.4 & 0.4879 & 3  \\
+    3.6 & 0.4879 & 2  \\
+    3.8 & 0.4879 & 2  \\
+    4.0 & 0.4879 & 2  \\ \bottomrule
+    \end{tabular}
+    \caption{Mean Shift Grid Search Results: Manual Feature Set}
+\end{table}
+
+\FloatBarrier
+As observed from the tables above, Mean-Shift Clustering is not able to successfully cluster the data points when using 
+the 10-dimensional PCA components. The bandwidth that will be used for this feature set is 3.4, as it achieves one of 
+the highest Silhouette Scores and 8 clusters (compared to 6 labels).
+
+However, when trained on the manually selected features, the model achieves significantly better results. At a bandwidth 
+equal to 2.6, Mean-Shift Clustering has a Silhouette Score of 0.37 and 7 clusters. Higher scores are achieved with different 
+bandwidths, but they group the data into too few clusters for our task.
+
+With the selected set of bandwidths, the model was not able to train using the full feature set, highlighting its
+limitations when using high-dimensional input.
+
+\subsection{Results}
+
+Using a similar labeling approach to the previoud unsupervised model, the two configuration achieve the following 
+results:
+
+\begin{table}[h]
+    \centering
+    \begin{tabular}{@{}lcc@{}}
+    \toprule
+    \textbf{Metric / Class} & \textbf{PCA Feature Set} & \textbf{Manual Feature Set} \\ \midrule
+    \textbf{Accuracy}       & 0.56                     & 0.52                        \\ \midrule
+    \textit{F1-Score per Class:} & & \\
+    WALKING                 & 0.54                     & 0.52                        \\
+    WALKING\_UPSTAIRS       & 0.00                     & 0.00                        \\
+    WALKING\_DOWNSTAIRS     & 0.45                     & 0.05                        \\
+    SITTING                 & 0.00                     & 0.00                        \\
+    STANDING                & 0.68                     & 0.68                        \\
+    LAYING                  & 1.00                     & 0.97                        \\ \midrule
+    Macro Avg F1            & 0.45                     & 0.37                        \\
+    Weighted Avg F1         & 0.46                     & 0.39                        \\ \bottomrule
+    \end{tabular}
+    \caption{Classification Comparison: PCA vs. Manual Feature Sets}
+\end{table}
+
+\FloatBarrier
+The results are well over random, but very modest for both configuration. The model is only able to distinguish
+Laying, Dynamic labels (Walking, Walking Upstairs and Wlaking Downstairs) and Vertical Static (Standing and Sitting).
+
+
+
+\FloatBarrier
 \section{Comparative Analysis and Discussion}
 \label{sec:discussion}
-% Compare Manual vs. PCA across all models.
-% Discuss the "Sitting vs. Standing" confusion in unsupervised models.
-% Compare Topology-based discovery (SOM) vs. Density-based discovery (Mean-Shift).
+This report showed that unsupervised learning algorithms can effectively be employed for supervised tasks. While not 
+able the achieve the same results as a classic Support Vector Machine, both Self-Organizing Maps and Mean-Shift 
+Clustering successfully grouped the feature space into distinct clusters.
 
-\section{Conclusion}
-\label{sec:conclusion}
+Both unsupervised models performed poorly when trained with the full-feature set, a limitation common for clustering 
+algorithms. Both the 10-dimensional PCA-based features set and the 15-dimensional manually 
+selected feature set can be regarded as similarly performant.
 
+A direct comparison between the Self-Organizing Map and the Mean-Shift Clustering algorithms cannot be made, as they 
+have different goals. If we look at the common metrics, the label prediction accuracy, it may seem the Self-Organizing 
+Map outperforms the Mean-Shift Clustering. However, the larger number of cells used for prediction by the SOM 
+automatically increases the accuracy. Configurations with a similar number of cells/clusters achieve similar accuracies.
 
 \pagebreak
 \printbibliography
@@ -448,7 +569,7 @@ It is important to acknowledge that a grid with more cells will naturally achiev
 \begin{figure}[htbp]
     \centering
     \includesvg[width=0.8\textwidth]{../fig/svm_manual_cm.svg}
-    \caption{Full Confusion Matrix: 15-Feature Manual SVM.}
+    \caption{Confusion Matrix: 15-Feature Manual SVM.}
     \label{fig:svm_manual_cm}
 \end{figure}
 
@@ -462,9 +583,25 @@ It is important to acknowledge that a grid with more cells will naturally achiev
 \begin{figure}[htbp]
     \centering
     \includesvg[width=0.8\textwidth]{../fig/svm_pca80_cm.svg}
-    \caption{Full Confusion Matrix: 10-Feature PCA SVM.}
+    \caption{Confusion Matrix: 10-Feature PCA SVM.}
     \label{fig:svm_pca80_cm}
 \end{figure}
+
+\begin{figure}[htbp]
+    \centering
+    \includesvg[width=0.8\textwidth]{../fig/msc_pca_cm.svg}
+    \caption{Confusion Matrix: 10-Feature PCA Mean-Shift Clustering.}
+    \label{fig:msc_pca_cm}
+\end{figure}
+
+\begin{figure}[htbp]
+    \centering
+    \includesvg[width=0.8\textwidth]{../fig/msc_manual_cm.svg}
+    \caption{Confusion Matrix: 15-Feature Manual Mean-Shift Clustering.}
+    \label{fig:msc_manual_cm}
+\end{figure}
+
+
 
 \end{appendix}
 \end{document}

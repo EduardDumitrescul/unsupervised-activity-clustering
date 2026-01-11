@@ -7,6 +7,7 @@ import seaborn as sns
 from minisom import MiniSom
 
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
+import sklearn.metrics
 
 
 class SomModelRunner:
@@ -27,10 +28,10 @@ class SomModelRunner:
         self.model.train_batch(data, num_iteration=iterations, verbose=False)
         qe = self.model.quantization_error(data)
         te = self.model.topographic_error(data)
-        acc = self.evaluate_test_set(verbose=False)
+        acc, sh = self.evaluate_test_set(verbose=False)
         print(f"[{self.name}]QE:{qe:.4f} | TE:{te:.4f} | ACC:{acc:.4f}")
 
-        return self.model.quantization_error(data), self.model.topographic_error(data)
+        return self.model.quantization_error(data), self.model.topographic_error(data), sh
 
     def plot_u_matrix(self):
         plt.figure(figsize=(10, 8))
@@ -90,8 +91,10 @@ class SomModelRunner:
 
 
 
+        silhouette = sklearn.metrics.silhouette_score(ts_x, preds)
         if verbose:
             print(f"Test Accuracy: {accuracy_score(ts_y, preds):.4f}")
+            print(f"Silhouette Score: {silhouette}")
             print(classification_report(ts_y, preds, labels=labels, target_names=names))
 
             plt.figure(figsize=(10, 8))
@@ -100,7 +103,8 @@ class SomModelRunner:
             plt.ylabel('Actual')
             plt.xlabel('Predicted')
             plt.show()
-        return accuracy_score(ts_y, preds)
+            
+        return accuracy_score(ts_y, preds), silhouette
 
     def check_cluster_purity(self):
         train_x, train_y = self.feature_set.x['train'], self.feature_set.y['train'].ravel()

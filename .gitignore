@@ -1,1 +1,14 @@
 /data/UCI-HAR Dataset/
+.vscode/*
+report/*.aux
+report/*.bbl*
+report/*.bcf
+report/*.fls
+report/*.fdb*
+report/report.log
+report/*.out
+report/*.gz
+report/*.toc
+report/report.run.xml
+src/__pycache__/*
+report/svg-inkscape/*
